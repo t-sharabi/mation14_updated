@@ -513,4 +513,4 @@ export const DocumentProcessingInterface = ({ language = 'en', onDocumentProcess
   );
 };
 
-export default DocumentProcessingInterface;
+export { DocumentProcessingInterface };
