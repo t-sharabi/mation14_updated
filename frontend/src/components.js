@@ -943,6 +943,8 @@ export const VirtualDeskInterface = ({
       services: 'الخدمات المتاحة',
       placeholder: 'اكتب رسالتك...',
       disclaimer: 'MIND14 قد يرتكب أخطاء. فكر في التحقق من المعلومات المهمة.',
+      voiceEnabled: 'الإدخال الصوتي مفعل',
+      voiceDisabled: 'الإدخال الصوتي معطل',
       quickActions: {
         healthCard: 'تجديد البطاقة الصحية',
         idCard: 'استبدال بطاقة الهوية',
