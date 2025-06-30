@@ -911,6 +911,8 @@ export const VirtualDeskInterface = ({
   const [attachments, setAttachments] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [lastAIMessage, setLastAIMessage] = useState(null);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const isRTL = language === 'ar';
