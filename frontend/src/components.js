@@ -766,7 +766,7 @@ export const Sidebar = ({
 
       {/* New Chat Button */}
       {currentView === 'chat' && (
-        <div className="p-4">
+        <div className="p-4 space-y-3">
           <button
             onClick={onNewConversation}
             className={`w-full flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-colors ${
@@ -776,6 +776,24 @@ export const Sidebar = ({
             <Icons.Plus />
             {!collapsed && <span className="font-medium">{currentText.newChat}</span>}
           </button>
+          
+          {/* Voice Commands Info */}
+          {!collapsed && (
+            <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
+              <div className="flex items-center space-x-2 mb-2">
+                <Icons.Mic className="w-4 h-4 text-purple-400" />
+                <span className="text-sm font-medium text-gray-300">
+                  {language === 'ar' ? 'الأوامر الصوتية' : 'Voice Commands'}
+                </span>
+              </div>
+              <div className="space-y-1 text-xs text-gray-400">
+                <div>"{language === 'ar' ? 'محادثة جديدة' : 'New chat'}"</div>
+                <div>"{language === 'ar' ? 'إرسال' : 'Send'}"</div>
+                <div>"{language === 'ar' ? 'مسح' : 'Clear'}"</div>
+                <div>"{language === 'ar' ? 'الإعدادات' : 'Settings'}"</div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
