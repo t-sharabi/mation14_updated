@@ -926,6 +926,8 @@ export const VirtualDeskInterface = ({
       services: 'Available Services',
       placeholder: 'Type your message...',
       disclaimer: 'MIND14 can make mistakes. Consider checking important information.',
+      voiceEnabled: 'Voice input enabled',
+      voiceDisabled: 'Voice input disabled',
       quickActions: {
         healthCard: 'Renew Health Card',
         idCard: 'Replace ID Card',
