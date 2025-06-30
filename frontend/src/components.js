@@ -1042,7 +1042,21 @@ export const VirtualDeskInterface = ({
               </div>
             )}
           </div>
-          <LanguageSelector currentLanguage={language} onLanguageChange={onLanguageChange} />
+          <div className="flex items-center space-x-3">
+            {/* Voice Toggle */}
+            <button
+              onClick={() => setVoiceEnabled(!voiceEnabled)}
+              className={`p-2 rounded-lg transition-colors ${
+                voiceEnabled 
+                  ? 'text-purple-400 bg-purple-400/10 hover:bg-purple-400/20' 
+                  : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700'
+              }`}
+              title={voiceEnabled ? currentText.voiceEnabled : currentText.voiceDisabled}
+            >
+              <Icons.Mic />
+            </button>
+            <LanguageSelector currentLanguage={language} onLanguageChange={onLanguageChange} />
+          </div>
         </div>
       </div>
 
