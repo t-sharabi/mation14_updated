@@ -744,6 +744,16 @@ export const Sidebar = ({
             <span className="text-sm">{currentText.chat}</span>
           </button>
           
+          <button
+            onClick={() => onViewChange('documents')}
+            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+              currentView === 'documents' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            <Icons.Document />
+            <span className="text-sm">{language === 'ar' ? 'معالجة المستندات' : 'Document Processing'}</span>
+          </button>
+          
           {currentUser?.role === 'admin' && (
             <button
               onClick={() => onViewChange('admin')}
