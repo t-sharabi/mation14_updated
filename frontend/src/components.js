@@ -962,6 +962,13 @@ export const VirtualDeskInterface = ({
 
   useEffect(() => {
     scrollToBottom();
+    // Update last AI message for voice accessibility
+    if (conversation?.messages?.length > 0) {
+      const lastMessage = conversation.messages[conversation.messages.length - 1];
+      if (lastMessage.role === 'assistant') {
+        setLastAIMessage(lastMessage);
+      }
+    }
   }, [conversation?.messages]);
 
   const handleSend = async () => {
