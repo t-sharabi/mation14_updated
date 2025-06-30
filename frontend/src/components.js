@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AutomationDashboard } from './AutomationDashboard';
 import { VoiceControl, VoiceAccessibility } from './VoiceIntegration';
+import DocumentProcessingInterface from './DocumentProcessingInterface';
 
 // Icons (using SVG)
 const Icons = {
