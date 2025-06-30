@@ -1,0 +1,344 @@
+{
+  "name": "MIND14 - Multi-Channel Notifications (Email, SMS, WhatsApp)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "notifications",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "notification-webhook",
+      "name": "Notification Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "mind14-notification-webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "customer-name",
+              "name": "customerName",
+              "value": "={{ $json.customer_info.name }}",
+              "type": "string"
+            },
+            {
+              "id": "customer-phone",
+              "name": "customerPhone",
+              "value": "={{ $json.customer_info.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "customer-email",
+              "name": "customerEmail",
+              "value": "={{ $json.customer_info.email || 'noreply@mind14.com' }}",
+              "type": "string"
+            },
+            {
+              "id": "service-name",
+              "name": "serviceName",
+              "value": "={{ $json.service.name[$json.language] }}",
+              "type": "string"
+            },
+            {
+              "id": "appointment-id",
+              "name": "appointmentId",
+              "value": "={{ $json.appointment_id }}",
+              "type": "string"
+            },
+            {
+              "id": "language",
+              "name": "language",
+              "value": "={{ $json.language }}",
+              "type": "string"
+            },
+            {
+              "id": "scheduled-time",
+              "name": "scheduledTime",
+              "value": "={{ $json.scheduled_datetime }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "extract-notification-data",
+      "name": "Extract Notification Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "email-enabled",
+              "leftValue": "={{ $json.notification_preferences.email }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-email-preference",
+      "name": "Check Email Preference",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 120]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sms-enabled",
+              "leftValue": "={{ $json.notification_preferences.sms }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-sms-preference",
+      "name": "Check SMS Preference",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "whatsapp-enabled",
+              "leftValue": "={{ $json.notification_preferences.whatsapp }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-whatsapp-preference",
+      "name": "Check WhatsApp Preference",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 480]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@mind14.com",
+        "toEmail": "={{ $json.customerEmail }}",
+        "subject": "={{ $json.language === 'ar' ? 'تأكيد موعدك - MIND14' : 'Your Appointment Confirmation - MIND14' }}",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <style>\n        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }\n        .container { max-width: 600px; margin: 0 auto; background-color: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }\n        .header { background: linear-gradient(135deg, #9333EA, #EC4899); color: white; padding: 30px; text-align: center; }\n        .content { padding: 30px; }\n        .appointment-details { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }\n        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; }\n        .button { display: inline-block; background: linear-gradient(135deg, #9333EA, #EC4899); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 10px 0; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <h1>🤖 MIND14</h1>\n            <h2>{{ $json.language === 'ar' ? 'تأكيد الموعد' : 'Appointment Confirmation' }}</h2>\n        </div>\n        <div class=\"content\">\n            <p>{{ $json.language === 'ar' ? 'مرحباً' : 'Hello' }} <strong>{{ $json.customerName }}</strong>,</p>\n            \n            <p>{{ $json.language === 'ar' ? \n                'تم تأكيد موعدك بنجاح! إليك تفاصيل الموعد:' : \n                'Your appointment has been confirmed successfully! Here are your appointment details:' \n            }}</p>\n            \n            <div class=\"appointment-details\">\n                <h3>📅 {{ $json.language === 'ar' ? 'تفاصيل الموعد' : 'Appointment Details' }}</h3>\n                <p><strong>{{ $json.language === 'ar' ? 'الخدمة:' : 'Service:' }}</strong> {{ $json.serviceName }}</p>\n                <p><strong>{{ $json.language === 'ar' ? 'رقم الموعد:' : 'Appointment ID:' }}</strong> {{ $json.appointmentId }}</p>\n                <p><strong>{{ $json.language === 'ar' ? 'التاريخ والوقت:' : 'Date & Time:' }}</strong> {{ $json.scheduledTime }}</p>\n                <p><strong>{{ $json.language === 'ar' ? 'الهاتف:' : 'Phone:' }}</strong> {{ $json.customerPhone }}</p>\n            </div>\n            \n            <p>{{ $json.language === 'ar' ? \n                'سنرسل لك تذكيرات قبل الموعد. إذا كنت بحاجة لإعادة جدولة أو إلغاء الموعد، يرجى الاتصال بنا قبل 24 ساعة على الأقل.' : \n                'We will send you reminders before your appointment. If you need to reschedule or cancel, please contact us at least 24 hours in advance.' \n            }}</p>\n            \n            <center>\n                <a href=\"https://mind14.com/appointments/{{ $json.appointmentId }}\" class=\"button\">\n                    {{ $json.language === 'ar' ? 'إدارة الموعد' : 'Manage Appointment' }}\n                </a>\n            </center>\n        </div>\n        <div class=\"footer\">\n            <p>{{ $json.language === 'ar' ? \n                'شكراً لاختيارك MIND14 - مساعدك الافتراضي الذكي' : \n                'Thank you for choosing MIND14 - Your AI Virtual Assistant' \n            }}</p>\n            <p>📧 support@mind14.com | 📱 +1-800-MIND14</p>\n        </div>\n    </div>\n</body>\n</html>"
+      },
+      "id": "send-email-confirmation",
+      "name": "Send Email Confirmation",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [900, 120]
+    },
+    {
+      "parameters": {
+        "resource": "sms",
+        "operation": "send",
+        "accountSid": "={{ $env.TWILIO_ACCOUNT_SID }}",
+        "authToken": "={{ $env.TWILIO_AUTH_TOKEN }}",
+        "fromPhoneNumber": "={{ $env.TWILIO_PHONE_NUMBER }}",
+        "toPhoneNumber": "={{ $json.customerPhone }}",
+        "message": "{{ $json.language === 'ar' ? \n  '🤖 MIND14: تم تأكيد موعدك!\\n\\n📅 الخدمة: ' + $json.serviceName + '\\n🆔 رقم الموعد: ' + $json.appointmentId + '\\n⏰ الوقت: ' + $json.scheduledTime + '\\n\\nسنرسل لك تذكيرات قبل الموعد. شكراً لاختيارك MIND14!' : \n  '🤖 MIND14: Your appointment is confirmed!\\n\\n📅 Service: ' + $json.serviceName + '\\n🆔 ID: ' + $json.appointmentId + '\\n⏰ Time: ' + $json.scheduledTime + '\\n\\nWe\\'ll send you reminders. Thank you for choosing MIND14!' \n}}"
+      },
+      "id": "send-sms-confirmation",
+      "name": "Send SMS Confirmation",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.whatsapp.com/send",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppBusinessApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "{{ $json.customerPhone }}"
+            },
+            {
+              "name": "type",
+              "value": "text"
+            },
+            {
+              "name": "text",
+              "value": "{\n  \"body\": \"{{ $json.language === 'ar' ? \n    '🤖 MIND14: تم تأكيد موعدك!\\n\\n📅 الخدمة: ' + $json.serviceName + '\\n🆔 رقم الموعد: ' + $json.appointmentId + '\\n⏰ الوقت: ' + $json.scheduledTime + '\\n\\nسنرسل لك تذكيرات قبل الموعد.\\n\\n🔗 إدارة الموعد: https://mind14.com/appointments/' + $json.appointmentId : \n    '🤖 MIND14: Your appointment is confirmed!\\n\\n📅 Service: ' + $json.serviceName + '\\n🆔 ID: ' + $json.appointmentId + '\\n⏰ Time: ' + $json.scheduledTime + '\\n\\nWe will send you reminders.\\n\\n🔗 Manage: https://mind14.com/appointments/' + $json.appointmentId \n  }}\"\n}"
+            }
+          ]
+        }
+      },
+      "id": "send-whatsapp-message",
+      "name": "Send WhatsApp Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 480]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"success\",\n  \"message\": \"Notifications sent successfully\",\n  \"notifications_sent\": {\n    \"email\": {{ $json.notification_preferences.email }},\n    \"sms\": {{ $json.notification_preferences.sms }},\n    \"whatsapp\": {{ $json.notification_preferences.whatsapp }}\n  }\n}"
+      },
+      "id": "notification-success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Notification Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Notification Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Notification Data": {
+      "main": [
+        [
+          {
+            "node": "Check Email Preference",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check SMS Preference",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check WhatsApp Preference",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Email Preference": {
+      "main": [
+        [
+          {
+            "node": "Send Email Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check SMS Preference": {
+      "main": [
+        [
+          {
+            "node": "Send SMS Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check WhatsApp Preference": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send SMS Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-01-27T00:00:00.000Z",
+      "updatedAt": "2025-01-27T00:00:00.000Z",
+      "id": "mind14-notifications",
+      "name": "MIND14 Notifications"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-27T00:00:00.000Z",
+  "versionId": "1"
+}

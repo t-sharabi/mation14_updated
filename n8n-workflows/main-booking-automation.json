@@ -1,0 +1,289 @@
+{
+  "name": "MIND14 - Main Booking Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "booking",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-booking",
+      "name": "Booking Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "mind14-booking-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "booking-type-condition",
+              "leftValue": "={{ $json.booking_type }}",
+              "rightValue": "new_appointment",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "booking-type-check",
+      "name": "Check Booking Type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "customer-name",
+              "name": "customerName",
+              "value": "={{ $json.customer_info.name }}",
+              "type": "string"
+            },
+            {
+              "id": "customer-phone",
+              "name": "customerPhone", 
+              "value": "={{ $json.customer_info.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "service-name",
+              "name": "serviceName",
+              "value": "={{ $json.service.name[$json.language] }}",
+              "type": "string"
+            },
+            {
+              "id": "appointment-id",
+              "name": "appointmentId",
+              "value": "={{ $json.appointment_id }}",
+              "type": "string"
+            },
+            {
+              "id": "scheduled-time",
+              "name": "scheduledTime",
+              "value": "={{ $json.scheduled_datetime }}",
+              "type": "string"
+            },
+            {
+              "id": "language",
+              "name": "language",
+              "value": "={{ $json.language }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "extract-booking-data",
+      "name": "Extract Booking Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GOOGLE_CALENDAR_API_URL }}/calendars/primary/events",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleCalendarOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "summary",
+              "value": "={{ $json.serviceName }} - {{ $json.customerName }}"
+            },
+            {
+              "name": "description", 
+              "value": "MIND14 Virtual Front Desk Appointment\\nCustomer: {{ $json.customerName }}\\nPhone: {{ $json.customerPhone }}\\nAppointment ID: {{ $json.appointmentId }}"
+            },
+            {
+              "name": "start",
+              "value": "{\n  \"dateTime\": \"{{ $json.scheduledTime }}\",\n  \"timeZone\": \"UTC\"\n}"
+            },
+            {
+              "name": "end",
+              "value": "{\n  \"dateTime\": \"{{ DateTime.fromISO($json.scheduledTime).plus({ minutes: 30 }).toISO() }}\",\n  \"timeZone\": \"UTC\"\n}"
+            },
+            {
+              "name": "attendees",
+              "value": "[\n  {\n    \"email\": \"{{ $json.customer_info.email || 'noreply@mind14.com' }}\"\n  }\n]"
+            }
+          ]
+        }
+      },
+      "id": "create-calendar-event",
+      "name": "Create Google Calendar Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 180]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.MIND14_NOTIFICATION_WEBHOOK }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "appointment_id",
+              "value": "={{ $json.appointmentId }}"
+            },
+            {
+              "name": "customer_info",
+              "value": "={{ $json.customer_info }}"
+            },
+            {
+              "name": "service",
+              "value": "={{ $json.service }}"
+            },
+            {
+              "name": "language",
+              "value": "={{ $json.language }}"
+            },
+            {
+              "name": "notification_type",
+              "value": "booking_confirmation"
+            },
+            {
+              "name": "scheduled_datetime",
+              "value": "={{ $json.scheduledTime }}"
+            }
+          ]
+        }
+      },
+      "id": "trigger-notifications",
+      "name": "Trigger Notification Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 420]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"success\",\n  \"message\": \"Booking automation completed\",\n  \"appointment_id\": \"{{ $json.appointmentId }}\",\n  \"calendar_event_created\": true,\n  \"notifications_triggered\": true\n}"
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"error\",\n  \"message\": \"Invalid booking type or missing data\"\n}"
+      },
+      "id": "error-response",
+      "name": "Error Response", 
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 500]
+    }
+  ],
+  "connections": {
+    "Booking Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Booking Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Booking Type": {
+      "main": [
+        [
+          {
+            "node": "Extract Booking Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Booking Data": {
+      "main": [
+        [
+          {
+            "node": "Create Google Calendar Event",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Trigger Notification Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Google Calendar Event": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Notification Workflow": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-01-27T00:00:00.000Z",
+      "updatedAt": "2025-01-27T00:00:00.000Z",
+      "id": "mind14-booking",
+      "name": "MIND14 Booking"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-27T00:00:00.000Z",
+  "versionId": "1"
+}

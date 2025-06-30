@@ -1,0 +1,369 @@
+{
+  "name": "MIND14 - Smart Reminder System",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "value": 1
+            }
+          ]
+        }
+      },
+      "id": "reminder-scheduler",
+      "name": "Reminder Scheduler (Every Hour)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "{{ $env.MIND14_API_URL }}/api/appointments/due-reminders",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "mind14Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "hours_ahead",
+              "value": "24,2,0.5"
+            },
+            {
+              "name": "status",
+              "value": "confirmed"
+            }
+          ]
+        }
+      },
+      "id": "fetch-due-reminders",
+      "name": "Fetch Due Reminders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-appointments",
+              "leftValue": "={{ $json.appointments.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-has-appointments",
+      "name": "Check Has Appointments",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "appointments",
+        "options": {}
+      },
+      "id": "split-appointments",
+      "name": "Split Appointments",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "hours-until",
+              "name": "hoursUntil",
+              "value": "={{ Math.round((new Date($json.scheduled_datetime) - new Date()) / (1000 * 60 * 60)) }}",
+              "type": "number"
+            },
+            {
+              "id": "reminder-type",
+              "name": "reminderType",
+              "value": "={{ $json.hoursUntil >= 20 ? '24h_reminder' : $json.hoursUntil >= 1 ? '2h_reminder' : 'final_reminder' }}",
+              "type": "string"
+            },
+            {
+              "id": "message-template",
+              "name": "messageTemplate",
+              "value": "={{ $json.language === 'ar' ? (\n  $json.reminderType === '24h_reminder' ? \n    '🔔 تذكير: لديك موعد غداً\\n\\n📅 الخدمة: ' + $json.service.name.ar + '\\n⏰ الوقت: ' + $json.scheduled_datetime + '\\n🆔 رقم الموعد: ' + $json.appointment_id + '\\n\\nيرجى الحضور قبل 15 دقيقة من الموعد.' :\n  $json.reminderType === '2h_reminder' ? \n    '⏰ تذكير: موعدك خلال ساعتين\\n\\n📅 الخدمة: ' + $json.service.name.ar + '\\n🆔 رقم الموعد: ' + $json.appointment_id + '\\n\\nاحضر معك الوثائق المطلوبة.' :\n    '🚨 تذكير أخير: موعدك خلال 30 دقيقة\\n\\n📍 الموقع: ' + $json.location.address + '\\n🆔 رقم الموعد: ' + $json.appointment_id\n) : (\n  $json.reminderType === '24h_reminder' ? \n    '🔔 Reminder: You have an appointment tomorrow\\n\\n📅 Service: ' + $json.service.name.en + '\\n⏰ Time: ' + $json.scheduled_datetime + '\\n🆔 ID: ' + $json.appointment_id + '\\n\\nPlease arrive 15 minutes early.' :\n  $json.reminderType === '2h_reminder' ? \n    '⏰ Reminder: Your appointment in 2 hours\\n\\n📅 Service: ' + $json.service.name.en + '\\n🆔 ID: ' + $json.appointment_id + '\\n\\nBring required documents.' :\n    '🚨 Final reminder: Your appointment in 30 minutes\\n\\n📍 Location: ' + $json.location.address + '\\n🆔 ID: ' + $json.appointment_id\n) }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "prepare-reminder-data",
+      "name": "Prepare Reminder Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sms-enabled",
+              "leftValue": "={{ $json.notification_preferences.sms }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-sms-enabled",
+      "name": "Check SMS Enabled",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "whatsapp-enabled",
+              "leftValue": "={{ $json.notification_preferences.whatsapp }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-whatsapp-enabled",
+      "name": "Check WhatsApp Enabled",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 400]
+    },
+    {
+      "parameters": {
+        "resource": "sms",
+        "operation": "send",
+        "accountSid": "={{ $env.TWILIO_ACCOUNT_SID }}",
+        "authToken": "={{ $env.TWILIO_AUTH_TOKEN }}",
+        "fromPhoneNumber": "={{ $env.TWILIO_PHONE_NUMBER }}",
+        "toPhoneNumber": "={{ $json.customer_info.phone }}",
+        "message": "🤖 MIND14\\n{{ $json.messageTemplate }}\\n\\n📞 Need help? Reply HELP\\n🚫 Stop messages? Reply STOP"
+      },
+      "id": "send-sms-reminder",
+      "name": "Send SMS Reminder",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 2,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.whatsapp.com/send",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppBusinessApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "{{ $json.customer_info.phone }}"
+            },
+            {
+              "name": "type",
+              "value": "text"
+            },
+            {
+              "name": "text",
+              "value": "{\n  \"body\": \"🤖 MIND14\\n{{ $json.messageTemplate }}\\n\\n🔗 Manage: https://mind14.com/appointments/{{ $json.appointment_id }}\\n📞 Support: +1-800-MIND14\"\n}"
+            }
+          ]
+        }
+      },
+      "id": "send-whatsapp-reminder",
+      "name": "Send WhatsApp Reminder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $env.MIND14_API_URL }}/api/appointments/{{ $json.appointment_id }}/reminder-sent",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "reminder_type",
+              "value": "{{ $json.reminderType }}"
+            },
+            {
+              "name": "sent_via",
+              "value": "{{ $json.notification_preferences.sms ? 'sms' : '' }}{{ $json.notification_preferences.whatsapp ? ',whatsapp' : '' }}"
+            },
+            {
+              "name": "sent_at",
+              "value": "{{ new Date().toISOString() }}"
+            }
+          ]
+        }
+      },
+      "id": "log-reminder-sent",
+      "name": "Log Reminder Sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 300]
+    }
+  ],
+  "connections": {
+    "Reminder Scheduler (Every Hour)": {
+      "main": [
+        [
+          {
+            "node": "Fetch Due Reminders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Due Reminders": {
+      "main": [
+        [
+          {
+            "node": "Check Has Appointments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Has Appointments": {
+      "main": [
+        [
+          {
+            "node": "Split Appointments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Appointments": {
+      "main": [
+        [
+          {
+            "node": "Prepare Reminder Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Reminder Data": {
+      "main": [
+        [
+          {
+            "node": "Check SMS Enabled",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check WhatsApp Enabled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check SMS Enabled": {
+      "main": [
+        [
+          {
+            "node": "Send SMS Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check WhatsApp Enabled": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send SMS Reminder": {
+      "main": [
+        [
+          {
+            "node": "Log Reminder Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Reminder": {
+      "main": [
+        [
+          {
+            "node": "Log Reminder Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-01-27T00:00:00.000Z",
+      "updatedAt": "2025-01-27T00:00:00.000Z",
+      "id": "mind14-reminders",
+      "name": "MIND14 Reminders"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-27T00:00:00.000Z",
+  "versionId": "1"
+}

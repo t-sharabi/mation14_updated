@@ -2,6 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Ensure consistent layout behavior */
+.sidebar-layout {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main-content {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.chat-messages {
+  height: calc(100vh - 140px); /* Adjust based on header and input heights */
+  overflow-y: auto;
+}
+
+/* Fix for flex layout issues */
+.flex-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.flex-sidebar {
+  flex-shrink: 0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-main {
+  flex: 1;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Ensure proper text alignment for RTL */
+[dir="rtl"] .text-left {
+  text-align: right !important;
+}
+
+[dir="ltr"] .text-left {
+  text-align: left !important;
+}
+
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
@@ -9,6 +76,7 @@ body {
         "Helvetica Neue", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow: hidden; /* Prevent body scrolling */
 }
 
 code {
