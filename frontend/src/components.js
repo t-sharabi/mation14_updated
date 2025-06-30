@@ -982,6 +982,19 @@ export const VirtualDeskInterface = ({
     setIsLoading(false);
   };
 
+  const handleVoiceMessage = async (voiceText) => {
+    if (!voiceText.trim()) return;
+    
+    setIsLoading(true);
+    await onSendMessage(voiceText, []);
+    setIsLoading(false);
+  };
+
+  const handleNewChat = () => {
+    // This would typically call a parent function to create new chat
+    console.log('Voice command: New chat requested');
+  };
+
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
