@@ -732,7 +732,7 @@ export const Sidebar = ({
       </div>
 
       {/* View Toggle */}
-      {!collapsed && (currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
+      {!collapsed && (
         <div className="p-4 space-y-2">
           <button
             onClick={() => onViewChange('chat')}
@@ -754,28 +754,30 @@ export const Sidebar = ({
             <span className="text-sm">{language === 'ar' ? 'معالجة المستندات' : 'Document Processing'}</span>
           </button>
           
-          {currentUser?.role === 'admin' && (
-            <button
-              onClick={() => onViewChange('admin')}
-              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-                currentView === 'admin' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'
-              }`}
-            >
-              <Icons.Dashboard />
-              <span className="text-sm">{currentText.admin}</span>
-            </button>
-          )}
-          
           {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
-            <button
-              onClick={() => onViewChange('management')}
-              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-                currentView === 'management' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'
-              }`}
-            >
-              <Icons.Management />
-              <span className="text-sm">{currentText.management}</span>
-            </button>
+            <>
+              {currentUser?.role === 'admin' && (
+                <button
+                  onClick={() => onViewChange('admin')}
+                  className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                    currentView === 'admin' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                  }`}
+                >
+                  <Icons.Dashboard />
+                  <span className="text-sm">{currentText.admin}</span>
+                </button>
+              )}
+              
+              <button
+                onClick={() => onViewChange('management')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                  currentView === 'management' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
+              >
+                <Icons.Management />
+                <span className="text-sm">{currentText.management}</span>
+              </button>
+            </>
           )}
         </div>
       )}
