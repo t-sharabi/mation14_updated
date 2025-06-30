@@ -1201,6 +1201,16 @@ export const VirtualDeskInterface = ({
                 </button>
               </div>
               
+              {/* Voice Control Component */}
+              {voiceEnabled && (
+                <VoiceControl
+                  onSendMessage={handleVoiceMessage}
+                  onNewChat={handleNewChat}
+                  language={language}
+                  className="flex-shrink-0"
+                />
+              )}
+              
               {/* Always Visible Send Button */}
               <button
                 onClick={handleSend}
