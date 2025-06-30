@@ -447,6 +447,14 @@ function App() {
                     language={currentLanguage}
                     onLanguageChange={handleLanguageChange}
                   />
+                ) : currentView === 'documents' ? (
+                  <DocumentProcessingInterface
+                    language={currentLanguage}
+                    onDocumentProcessed={(result) => {
+                      console.log('Document processed:', result);
+                      // Handle processed document result
+                    }}
+                  />
                 ) : (
                   <VirtualDeskInterface
                     conversation={conversations.find(conv => conv.id === activeConversationId)}
