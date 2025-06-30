@@ -513,4 +513,4 @@ export const DocumentProcessingInterface = ({ language = 'en', onDocumentProcess
   );
 };
 
-export { DocumentProcessingInterface };
+// Component is already exported at line 62
