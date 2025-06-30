@@ -1,12 +1,14 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { 
+import DocumentProcessing from './DocumentProcessing';
+
+const {
   ProcessingStatus, 
   useOCRExtraction, 
   useDocumentValidation, 
   useFileProcessing,
   DigitalSignature,
   DocumentViewer
-} from './DocumentProcessing';
+} = DocumentProcessing;
 
 // Import DocIcons separately
 const DocIcons = {
