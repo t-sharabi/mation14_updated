@@ -1141,6 +1141,13 @@ export const VirtualDeskInterface = ({
                 language={language}
               />
             ))}
+            
+            {/* Voice Accessibility for AI responses */}
+            <VoiceAccessibility 
+              message={lastAIMessage}
+              language={language}
+              isEnabled={voiceEnabled}
+            />
             {isLoading && (
               <div className="flex items-start space-x-3 mb-6">
                 <img
