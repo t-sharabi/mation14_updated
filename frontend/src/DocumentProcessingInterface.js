@@ -60,24 +60,15 @@ const DocIcons = {
   )
 };
 
-// Document Processing Interface Component
+// Simple Document Processing Interface for MIND14
 export const DocumentProcessingInterface = ({ language = 'en', onDocumentProcessed }) => {
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [extractedText, setExtractedText] = useState('');
-  const [validationResult, setValidationResult] = useState(null);
   const [processingStatus, setProcessingStatus] = useState('idle');
-  const [showSignature, setShowSignature] = useState(false);
-  const [signature, setSignature] = useState(null);
-  const [aiAnalysis, setAiAnalysis] = useState(null);
   const fileInputRef = useRef(null);
   
   const isRTL = language === 'ar';
   
-  const { extractText, isProcessing: isOCRProcessing, progress: ocrProgress } = useOCRExtraction();
-  const { validateIDDocument } = useDocumentValidation();
-  const { processPDF, processWordDocument, processImage } = useFileProcessing();
-
   const text = {
     en: {
       title: 'Document Processing Center',
@@ -88,7 +79,6 @@ export const DocumentProcessingInterface = ({ language = 'en', onDocumentProcess
       processDocument: 'Process Document',
       extractText: 'Extract Text (OCR)',
       validateID: 'Validate ID Document',
-      analyzeForm: 'AI Form Analysis',
       addSignature: 'Add Digital Signature',
       downloadProcessed: 'Download Processed',
       documentType: 'Document Type',
@@ -96,15 +86,8 @@ export const DocumentProcessingInterface = ({ language = 'en', onDocumentProcess
       nationalID: 'National ID',
       passport: 'Passport',
       drivingLicense: 'Driving License',
-      healthCard: 'Health Card',
-      birthCertificate: 'Birth Certificate',
       other: 'Other Document',
-      processing: 'Processing...',
-      aiSuggestions: 'AI Suggestions',
-      formFields: 'Detected Form Fields',
-      extractedData: 'Extracted Data',
-      confidence: 'Confidence Level',
-      validationResults: 'Validation Results'
+      noFileSelected: 'Select a document to view and process'
     },
     ar: {
       title: 'مركز معالجة المستندات',
@@ -115,7 +98,6 @@ export const DocumentProcessingInterface = ({ language = 'en', onDocumentProcess
       processDocument: 'معالجة المستند',
       extractText: 'استخراج النص (OCR)',
       validateID: 'التحقق من الهوية',
-      analyzeForm: 'تحليل النماذج بالذكاء الاصطناعي',
       addSignature: 'إضافة التوقيع الرقمي',
       downloadProcessed: 'تحميل المعالج',
       documentType: 'نوع المستند',
@@ -123,26 +105,42 @@ export const DocumentProcessingInterface = ({ language = 'en', onDocumentProcess
       nationalID: 'الهوية الوطنية',
       passport: 'جواز السفر',
       drivingLicense: 'رخصة القيادة',
-      healthCard: 'البطاقة الصحية',
-      birthCertificate: 'شهادة الميلاد',
       other: 'مستند آخر',
-      processing: 'جاري المعالجة...',
-      aiSuggestions: 'اقتراحات الذكاء الاصطناعي',
-      formFields: 'حقول النماذج المكتشفة',
-      extractedData: 'البيانات المستخرجة',
-      confidence: 'مستوى الثقة',
-      validationResults: 'نتائج التحقق'
+      noFileSelected: 'اختر مستندًا للعرض والمعالجة'
     }
   };
 
   const currentText = text[language];
 
+  // Document Icons
+  const DocIcons = {
+    Upload: () => (
+      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+      </svg>
+    ),
+    Document: () => (
+      <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+    Eye: () => (
+      <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+      </svg>
+    ),
+    X: () => (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    )
+  };
+
   const documentTypes = [
     { id: 'nationalID', label: currentText.nationalID },
     { id: 'passport', label: currentText.passport },
     { id: 'drivingLicense', label: currentText.drivingLicense },
-    { id: 'healthCard', label: currentText.healthCard },
-    { id: 'birthCertificate', label: currentText.birthCertificate },
     { id: 'other', label: currentText.other }
   ];
 
@@ -173,118 +171,19 @@ export const DocumentProcessingInterface = ({ language = 'en', onDocumentProcess
     e.preventDefault();
   }, []);
 
-  const processDocument = useCallback(async (file, documentType) => {
-    try {
-      setProcessingStatus('processing');
-      let processedContent = '';
-
-      // Process based on file type
-      if (file.type === 'application/pdf') {
-        const result = await processPDF(file);
-        processedContent = result.fullText;
-      } else if (file.type.includes('word') || file.name.endsWith('.docx')) {
-        const result = await processWordDocument(file);
-        processedContent = result.text;
-      } else if (file.type.startsWith('image/')) {
-        setProcessingStatus('extracting');
-        const ocrResult = await extractText(file, language === 'ar' ? 'ara+eng' : 'eng');
-        processedContent = ocrResult.text;
-        setExtractedText(processedContent);
-      }
-
-      // Validate if it's an ID document
-      if (['nationalID', 'passport', 'drivingLicense'].includes(documentType)) {
-        setProcessingStatus('validating');
-        const validation = await validateIDDocument(processedContent, documentType);
-        setValidationResult(validation);
-      }
-
-      // AI Analysis
-      setProcessingStatus('analyzing');
-      await performAIAnalysis(processedContent, documentType);
-
+  const processDocument = async () => {
+    setProcessingStatus('processing');
+    // Simulate processing
+    setTimeout(() => {
       setProcessingStatus('complete');
-      
       if (onDocumentProcessed) {
         onDocumentProcessed({
-          file,
-          extractedText: processedContent,
-          validationResult,
-          aiAnalysis
+          file: selectedFile?.file,
+          extractedText: 'Sample extracted text from document...',
+          status: 'processed'
         });
       }
-      
-    } catch (error) {
-      console.error('Document processing error:', error);
-      setProcessingStatus('error');
-    }
-  }, [extractText, validateIDDocument, language, onDocumentProcessed, validationResult, aiAnalysis]);
-
-  const performAIAnalysis = useCallback(async (text, documentType) => {
-    // Simulate AI analysis
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const analysis = {
-      suggestions: [
-        'Document appears to be properly formatted',
-        'All required fields seem to be present',
-        'Text quality is good for processing'
-      ],
-      formFields: extractFormFields(text),
-      confidence: 0.85 + Math.random() * 0.15,
-      completeness: Math.random() * 0.3 + 0.7
-    };
-    
-    setAiAnalysis(analysis);
-    return analysis;
-  }, []);
-
-  const extractFormFields = (text) => {
-    // Simple form field extraction logic
-    const fields = [];
-    
-    if (text.includes('Name') || text.includes('الاسم')) {
-      fields.push({ name: 'name', confidence: 0.9, required: true });
-    }
-    if (text.includes('Date') || text.includes('تاريخ')) {
-      fields.push({ name: 'date', confidence: 0.85, required: true });
-    }
-    if (text.includes('ID') || text.includes('رقم')) {
-      fields.push({ name: 'id_number', confidence: 0.95, required: true });
-    }
-    if (text.includes('Address') || text.includes('عنوان')) {
-      fields.push({ name: 'address', confidence: 0.8, required: false });
-    }
-    
-    return fields;
-  };
-
-  const handleSignature = (signatureData) => {
-    setSignature(signatureData);
-  };
-
-  const downloadProcessedDocument = () => {
-    const processedData = {
-      originalFile: selectedFile?.name,
-      extractedText,
-      validationResult,
-      aiAnalysis,
-      signature,
-      timestamp: new Date().toISOString()
-    };
-    
-    const blob = new Blob([JSON.stringify(processedData, null, 2)], {
-      type: 'application/json'
-    });
-    
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `processed_${selectedFile?.name || 'document'}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    }, 3000);
   };
 
   return (
@@ -292,7 +191,7 @@ export const DocumentProcessingInterface = ({ language = 'en', onDocumentProcess
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="w-20 h-20 mx-auto bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-3xl backdrop-blur-sm border border-purple-500/20 flex items-center justify-center">
-          <DocIcons.Document className="w-10 h-10 text-purple-400" />
+          <DocIcons.Document />
         </div>
         <h1 className="text-3xl font-bold text-white">{currentText.title}</h1>
         <p className="text-gray-400 max-w-2xl mx-auto">{currentText.subtitle}</p>
@@ -306,13 +205,13 @@ export const DocumentProcessingInterface = ({ language = 'en', onDocumentProcess
             <h3 className="text-lg font-semibold text-white mb-4">{currentText.uploadTitle}</h3>
             
             <div
-              className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center transition-colors hover:border-purple-500 hover:bg-purple-500/5"
+              className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center transition-colors hover:border-purple-500 hover:bg-purple-500/5 cursor-pointer"
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onClick={() => fileInputRef.current?.click()}
             >
-              <DocIcons.Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-300 mb-2">{currentText.uploadDesc}</p>
+              <DocIcons.Upload />
+              <p className="text-gray-300 mb-2 mt-4">{currentText.uploadDesc}</p>
               <p className="text-sm text-gray-500">{currentText.supportedFormats}</p>
               
               <input
@@ -338,7 +237,7 @@ export const DocumentProcessingInterface = ({ language = 'en', onDocumentProcess
                     }`}
                     onClick={() => setSelectedFile(fileItem)}
                   >
-                    <DocIcons.Document className="w-5 h-5 text-gray-400" />
+                    <DocIcons.Document />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white truncate">{fileItem.name}</p>
                       <p className="text-xs text-gray-400">
@@ -355,7 +254,7 @@ export const DocumentProcessingInterface = ({ language = 'en', onDocumentProcess
                       }}
                       className="text-gray-400 hover:text-red-400"
                     >
-                      <DocIcons.X className="w-4 h-4" />
+                      <DocIcons.X />
                     </button>
                   </div>
                 ))}
@@ -388,129 +287,78 @@ export const DocumentProcessingInterface = ({ language = 'en', onDocumentProcess
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
-                  onClick={() => processDocument(selectedFile.file, 'other')}
-                  disabled={isOCRProcessing}
+                  onClick={processDocument}
+                  disabled={processingStatus === 'processing'}
                   className="flex items-center justify-center space-x-2 p-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-600 text-white rounded-lg transition-colors"
                 >
-                  <DocIcons.Scan className="w-4 h-4" />
                   <span className="text-sm">{currentText.extractText}</span>
                 </button>
                 
                 <button
-                  onClick={() => processDocument(selectedFile.file, 'nationalID')}
-                  disabled={isOCRProcessing}
-                  className="flex items-center justify-center space-x-2 p-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-600 disabled:to-gray-600 text-white rounded-lg transition-colors"
+                  className="flex items-center justify-center space-x-2 p-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg transition-colors"
                 >
-                  <DocIcons.Validate className="w-4 h-4" />
                   <span className="text-sm">{currentText.validateID}</span>
                 </button>
                 
                 <button
-                  onClick={() => setShowSignature(true)}
                   className="flex items-center justify-center space-x-2 p-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg transition-colors"
                 >
-                  <DocIcons.Signature className="w-4 h-4" />
                   <span className="text-sm">{currentText.addSignature}</span>
                 </button>
                 
                 <button
-                  onClick={downloadProcessedDocument}
-                  disabled={!extractedText && !validationResult}
-                  className="flex items-center justify-center space-x-2 p-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 disabled:from-gray-600 disabled:to-gray-600 text-white rounded-lg transition-colors"
+                  className="flex items-center justify-center space-x-2 p-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white rounded-lg transition-colors"
                 >
-                  <DocIcons.Download className="w-4 h-4" />
                   <span className="text-sm">{currentText.downloadProcessed}</span>
                 </button>
               </div>
 
               {/* Processing Status */}
-              {(isOCRProcessing || processingStatus !== 'idle') && (
-                <div className="mt-4">
-                  <ProcessingStatus 
-                    status={processingStatus}
-                    progress={ocrProgress}
-                    language={language}
-                  />
+              {processingStatus === 'processing' && (
+                <div className="mt-4 flex items-center space-x-3">
+                  <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm text-purple-400">Processing document...</span>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* AI Analysis Results */}
-          {aiAnalysis && (
-            <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">{currentText.aiSuggestions}</h3>
               
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-400">{currentText.confidence}:</span>
-                  <div className="flex-1 bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full"
-                      style={{ width: `${aiAnalysis.confidence * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-sm text-white">
-                    {Math.round(aiAnalysis.confidence * 100)}%
-                  </span>
+              {processingStatus === 'complete' && (
+                <div className="mt-4 flex items-center space-x-3">
+                  <div className="w-5 h-5 text-green-400">✓</div>
+                  <span className="text-sm text-green-400">Processing complete!</span>
                 </div>
-
-                <div className="space-y-2">
-                  {aiAnalysis.suggestions.map((suggestion, index) => (
-                    <div key={index} className="flex items-start space-x-2">
-                      <DocIcons.Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-gray-300">{suggestion}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {aiAnalysis.formFields.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-semibold text-white mb-2">{currentText.formFields}:</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {aiAnalysis.formFields.map((field, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-gray-700 rounded">
-                          <span className="text-sm text-gray-300">{field.name}</span>
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            field.required ? 'bg-red-600 text-white' : 'bg-gray-600 text-gray-300'
-                          }`}>
-                            {field.required ? 'Required' : 'Optional'}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           )}
         </div>
 
         {/* Right Panel - Document Viewer */}
-        <div>
+        <div className="bg-gray-800 rounded-lg border border-gray-700">
           {selectedFile ? (
-            <DocumentViewer
-              file={selectedFile.file}
-              extractedText={extractedText}
-              validationResult={validationResult}
-              language={language}
-            />
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Document Preview</h3>
+              {selectedFile.file.type.startsWith('image/') && (
+                <img 
+                  src={URL.createObjectURL(selectedFile.file)} 
+                  alt="Document" 
+                  className="max-w-full h-auto rounded border border-gray-600"
+                />
+              )}
+              {selectedFile.file.type === 'application/pdf' && (
+                <div className="text-center text-gray-400 py-12">
+                  <DocIcons.Document />
+                  <p className="mt-4">PDF Document: {selectedFile.file.name}</p>
+                  <p className="text-sm">Size: {(selectedFile.file.size / 1024 / 1024).toFixed(2)} MB</p>
+                </div>
+              )}
+            </div>
           ) : (
-            <div className="bg-gray-800 rounded-lg border border-gray-700 p-12 text-center">
-              <DocIcons.Eye className="w-16 h-16 mx-auto mb-4 text-gray-500" />
-              <p className="text-gray-400">Select a document to view and process</p>
+            <div className="p-12 text-center">
+              <DocIcons.Eye />
+              <p className="text-gray-400 mt-4">{currentText.noFileSelected}</p>
             </div>
           )}
         </div>
       </div>
-
-      {/* Digital Signature Modal */}
-      <DigitalSignature
-        isOpen={showSignature}
-        onClose={() => setShowSignature(false)}
-        onSignature={handleSignature}
-        language={language}
-      />
     </div>
   );
 };
